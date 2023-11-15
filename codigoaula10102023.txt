@@ -1,0 +1,78 @@
+#define AIN1 5
+#define AIN2 18
+#define PWMA 19
+#define BIN1 16
+#define BIN2 4
+#define PWMB 15
+#define STBY 17
+
+#define IR1 14
+#define IR2 27  //teste
+#define IR3 26
+#define IR4 25  //teste
+#define IR5 33
+
+const int freq = 300;
+const int canal0 = 0;
+const int canal1 = 1;
+const int resol = 8;
+
+void setup() {
+  // put your setup code here, to run once:
+  Serial.begin(115200);
+  Serial.println("Hello, ESP32!");
+  pinMode(AIN1, OUTPUT);
+  pinMode(AIN2, OUTPUT);
+  pinMode(BIN1, OUTPUT);
+  pinMode(BIN2, OUTPUT);
+  pinMode(STBY, OUTPUT);
+  digitalWrite(STBY, HIGH);
+
+  ledcSetup(canal0, freq, resol);
+  ledcSetup(canal1, freq, resol);
+
+  ledcAttachPin(PWMA, canal0);
+  ledcAttachPin(PWMB, canal1);
+
+  pinMode(IR1, INPUT);
+  pinMode(IR2, INPUT);
+  pinMode(IR3, INPUT);
+  pinMode(IR4, INPUT);
+  pinMode(IR5, INPUT);
+}
+
+void loop() {
+  int v1 = digitalRead(IR1);
+  int v2 = digitalRead(IR2);
+  int v4 = digitalRead(IR4);
+  int v5 = digitalRead(IR5);
+  if (v2 && !v4) {
+    controleMotores(10, 110);
+  }else if (!v2 && v4){
+    controleMotores(110, 10);
+  }else {
+    controleMotores(40,40);
+  }
+}
+
+void controleMotores(int r, int l) {
+  if (r > 0) {
+    digitalWrite(BIN1, HIGH);
+    digitalWrite(BIN2, LOW);
+  } else {
+    digitalWrite(BIN1, LOW);
+    digitalWrite(BIN2, HIGH);
+    r = r * (-1);  // se valor negativo transformar em positivo para PWM
+  }
+  ledcWrite(canal1, r);
+
+  if (l > 0) {
+    digitalWrite(AIN1, HIGH);
+    digitalWrite(AIN2, LOW);
+  } else {
+    digitalWrite(AIN1, LOW);
+    digitalWrite(AIN2, HIGH);
+    l = l * (-1);  // se valor negativo transformar em positivo para PWM
+  }
+  ledcWrite(canal0, l);
+}
