@@ -1,0 +1,117 @@
+#define AIN1 5
+#define AIN2 18
+#define PWMA 19
+#define BIN1 16
+#define BIN2 4
+#define PWMB 15
+#define STBY 17
+
+#define IR1 14
+#define IR2 27  //teste
+#define IR3 26
+#define IR4 25  //teste
+#define IR5 35
+
+const int freq = 1200;
+const int canal0 = 0;
+const int canal1 = 1;
+const int resol = 8;
+
+const int NS = 5;
+int irleds[NS];
+long int sumap, suma, pos, poslast = -1;
+
+void setup() {
+  // put your setup code here, to run once:
+  Serial.begin(9600);
+  pinMode(AIN1, OUTPUT);
+  pinMode(AIN2, OUTPUT);
+  pinMode(BIN1, OUTPUT);
+  pinMode(BIN2, OUTPUT);
+  pinMode(STBY, OUTPUT);
+  digitalWrite(STBY, HIGH);
+
+  ledcSetup(canal0, freq, resol);
+  ledcSetup(canal1, freq, resol);
+
+  ledcAttachPin(PWMA, canal0);
+  ledcAttachPin(PWMB, canal1);
+
+  pinMode(IR1, INPUT);
+  pinMode(IR2, INPUT);
+  pinMode(IR3, INPUT);
+  pinMode(IR4, INPUT);
+  pinMode(IR5, INPUT);
+}
+
+void loop() {
+  /*
+  int v1 = digitalRead(IR1);
+  int v2 = digitalRead(IR2);
+  int v3 = digitalRead(IR3);
+  int v4 = digitalRead(IR4);
+  int v5 = digitalRead(IR5);
+*/
+  irleds[0] = digitalRead(IR1);
+  irleds[1] = digitalRead(IR2);
+  irleds[2] = digitalRead(IR3);
+  irleds[3] = digitalRead(IR4);
+  irleds[4] = digitalRead(IR5);
+
+  for (int i = 0; i < NS; i++) {
+    Serial.print("\t");
+    Serial.print(irleds[i]);
+  }
+
+  sumap = (50 * irleds[0] + 100 * irleds[1] + 200 * irleds[2] + 300 * irleds[3] + 400 * irleds[4]);
+  suma = (irleds[0] + irleds[1] + irleds[2] + irleds[3] + irleds[4]);
+  if (suma == 0) {
+    pos = 0;
+  } else
+    pos = (sumap / suma);
+  //lembrar ultima posição
+  // 0   1   2   3   4
+  //250 237 212 187 162
+  //if (poslast <= 165 && pos == 210) pos = 0;    // saí pela direita
+  //if (poslast >= 250 && pos == 210) pos = 255;  //saí pela esquerda
+  poslast = pos;
+
+  if (poslast <= 164) {
+    // Saída pela direita, vire à esquerda
+    controleMotores(0, 70);  // Ajuste os valores apropriados para seus motores
+  } else if (poslast >= 250) {
+    // Saída pela esquerda, vire à direita
+    controleMotores(70, 0);  // Ajuste os valores apropriados para seus motores
+  } else {
+    // Siga em linha reta (ou faça outra ação apropriada)
+    controleMotores(55, 55);  // Ajuste os valores apropriados para seus motores
+  }
+
+
+  Serial.print("\t");
+  Serial.print(pos);
+  Serial.print("\n");
+  //controleMotores(0, 0);
+}
+
+void controleMotores(int r, int l) {
+  if (r > 0) {
+    digitalWrite(BIN1, HIGH);
+    digitalWrite(BIN2, LOW);
+  } else {
+    digitalWrite(BIN1, LOW);
+    digitalWrite(BIN2, HIGH);
+    r = r * (-1);  // se valor negativo transformar em positivo para PWM
+  }
+  ledcWrite(canal1, r);
+
+  if (l > 0) {
+    digitalWrite(AIN1, HIGH);
+    digitalWrite(AIN2, LOW);
+  } else {
+    digitalWrite(AIN1, LOW);
+    digitalWrite(AIN2, HIGH);
+    l = l * (-1);  // se valor negativo transformar em positivo para PWM
+  }
+  ledcWrite(canal0, l);
+}
